@@ -1,6 +1,68 @@
 from matrix import *
 from graphics import *
 from vectors import *
+from math import *
+
+def scanlineConvert(top, mid, bot, zbuffer):
+    #Thanks for the correction, Greg!
+    xt = top[0]
+    yt = top[1]
+    xm = mid[0]
+    ym = mid[1]
+    xb = bot[0]
+    yb = bot[1]
+
+    z0 = zb, z1 = zb
+    dx0 = (xt - xb) / (yt - yb)
+    dz0 = (zt - zb) / (yt - yb)
+    if (ym - yb) > 0:
+        dx1 = (xm - xb) / (ym - yb)
+        dz1 = (zm - zb) / (ym - yb)
+    else:
+        dx1 = 0
+        dz1 = 0
+    if (yt - ym) > 0:
+        dx1_1 = (xt - xm) / (yt - ym)
+        dz1_1 = (zt - zm) / (zt - zm)
+    else:
+        dx1_1 = 0
+        dz1_1 = 0
+
+    offset0 = ceil(yb) - yb
+    offset1 = ceil(ym) - ym
+
+    x0 = xb + (offset0 * dx0)
+    x1 = xb + (offset0 * dx1)
+    x1 = xb + (offset1 * dx1_1)
+
+    z0 = zb, z1 = zb
+
+    y = ceil(yb)
+
+    while (y < ceil(ym)):
+        drawLine(x0, y, z0, x1, y, z1)
+        x0 += dx0
+        x1 += dx1
+        y += 1
+        z0 += dz0
+        z1 += dz1
+
+    while (y < ceil(yt)):
+        drawLine(x0, y, z0, x2, y, z1)
+        x0 += dx0
+        x2 += dx1_1
+        y += 1
+        z0 += dz0
+        z1 +=dz1_1
+
+def scanlineOrder(p0, p1, p2):
+    if (p1[1] < p0[1]):
+        p0, p1 = p1, p0
+    if (p2[1] < p1[1]):
+        p1, p2 = p2, p1
+        if (p1[1] < p0[1]):
+            p1, p0 = p0, p1
+    return [p0, p1, p2]
 
 def addPolygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2):
     addPoint(polygons, x0, y0, z0)
@@ -18,8 +80,6 @@ def drawPolygons( polygons, zbuffer, color ):
         normal = dotProduct(crossProduct(surfaceVector(polygons[point], polygons[point + 1]),
                             surfaceVector(polygons[point], polygons[point + 2])),
                             viewVector())
-        print ("Checking normal")
-        print (normal)
         if normal > 0:
             drawLine( int(polygons[point][0]),
                        int(polygons[point][1]),
@@ -42,6 +102,8 @@ def drawPolygons( polygons, zbuffer, color ):
                        int(polygons[point+2][1]),
                        polygons[point+2][2],
                        zbuffer, color)
+            points = scanlineOrder(polygons[point], polygons[point+1], polygons[point+2])
+            scanlineConvert(points[2], points[1], points[0])
         point+= 3
 
 
