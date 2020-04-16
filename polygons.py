@@ -2,58 +2,59 @@ from matrix import *
 from graphics import *
 from vectors import *
 from math import *
+from random import *
 
-def scanlineConvert(top, mid, bot, zbuffer):
-    #Thanks for the correction, Greg!
+def scanlineConvert(top, mid, bot, zbuffer, color):
     xt = top[0]
     yt = top[1]
+    zt = top[2]
     xm = mid[0]
     ym = mid[1]
+    zm = mid[2]
     xb = bot[0]
     yb = bot[1]
+    zb = bot[2]
 
-    z0 = zb, z1 = zb
-    dx0 = (xt - xb) / (yt - yb)
-    dz0 = (zt - zb) / (yt - yb)
+    dx0 = (xt - xb) / (yt - yb + 1)
+    dz0 = (zt - zb) / (yt - yb + 1)
     if (ym - yb) > 0:
-        dx1 = (xm - xb) / (ym - yb)
-        dz1 = (zm - zb) / (ym - yb)
+        dx1 = (xm - xb) / (ym - yb + 1)
+        dz1 = (zm - zb) / (ym - yb + 1)
     else:
         dx1 = 0
         dz1 = 0
     if (yt - ym) > 0:
-        dx1_1 = (xt - xm) / (yt - ym)
-        dz1_1 = (zt - zm) / (zt - zm)
+        dx1_1 = (xt - xm) / (yt - ym + 1)
+        dz1_1 = (zt - zm) / (yt - ym + 1)
     else:
         dx1_1 = 0
         dz1_1 = 0
 
-    offset0 = ceil(yb) - yb
-    offset1 = ceil(ym) - ym
+    x0 = xb
+    x1 = xb
+    x2 = xb
+    z0 = zb
+    z1 = zb
 
-    x0 = xb + (offset0 * dx0)
-    x1 = xb + (offset0 * dx1)
-    x1 = xb + (offset1 * dx1_1)
+    y = floor(yb)
 
-    z0 = zb, z1 = zb
-
-    y = ceil(yb)
-
-    while (y < ceil(ym)):
-        drawLine(x0, y, z0, x1, y, z1)
+    while (y <= ym):
+        drawLine(floor(x0), y, z0, floor(x1), y, z1, zbuffer, color)
         x0 += dx0
         x1 += dx1
         y += 1
         z0 += dz0
         z1 += dz1
-
-    while (y < ceil(yt)):
-        drawLine(x0, y, z0, x2, y, z1)
+    y = floor(ym)
+    x1 = xm
+    z1 = zm
+    while (y <= yt):
+        drawLine(floor(x0), y, z0, floor(x1), y, z1, zbuffer, color)
         x0 += dx0
-        x2 += dx1_1
+        x1 += dx1_1
         y += 1
         z0 += dz0
-        z1 +=dz1_1
+        z1 += dz1
 
 def scanlineOrder(p0, p1, p2):
     if (p1[1] < p0[1]):
@@ -80,6 +81,7 @@ def drawPolygons( polygons, zbuffer, color ):
         normal = dotProduct(crossProduct(surfaceVector(polygons[point], polygons[point + 1]),
                             surfaceVector(polygons[point], polygons[point + 2])),
                             viewVector())
+        color = [int(random() * 255), int(random() * 255), int(random() * 255)]
         if normal > 0:
             drawLine( int(polygons[point][0]),
                        int(polygons[point][1]),
@@ -103,7 +105,8 @@ def drawPolygons( polygons, zbuffer, color ):
                        polygons[point+2][2],
                        zbuffer, color)
             points = scanlineOrder(polygons[point], polygons[point+1], polygons[point+2])
-            scanlineConvert(points[2], points[1], points[0])
+            print(points[2][1], points[1][1], points[0][1])
+            scanlineConvert(points[2], points[1], points[0], zbuffer, color)
         point+= 3
 
 
