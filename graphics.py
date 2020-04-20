@@ -32,21 +32,24 @@ def clearpixels():
     for x in range(len(pixels)):
         pixels[x] = 255;
 
-def newzbuffer( width = w, height = h ):
+def newzbuffer():
+    global w
+    global h
     zb = []
-    for y in range( height ):
-        row = [ float('-inf') for x in range(width) ]
+    for y in range( h ):
+        row = [ float('-inf') for x in range(w) ]
         zb.append( row )
     return zb
 
 def plot(zbuffer, color, x, y, z ):
     newy = h - 1 - y
-    index = (w * (h- y - 1) + x) * 3
+    index = (w * newy + x) * 3
     global pixels
-    if ( x >= 0 and x < w and newy >= 0 and newy < h ):
+    if ( x >= 0 and x < w and newy >= 0 and newy < h and z > zbuffer[y][x]):
         pixels[index] = color[0]
         pixels[index + 1] = color[1]
         pixels[index + 2] = color[2]
+        zbuffer[y][x] = z
 
 def clearzbuffer( zb ):
     for y in range( len(zb) ):
@@ -97,9 +100,11 @@ def drawLine( x0, y0, z0, x1, y1, z1, zbuffer, color ):
         y0 = y1
         x1 = xt
         y1 = yt
+        z0, z1 = z1, z0
 
     x = x0
     y = y0
+    z = z0
     A = 2 * (y1 - y0)
     B = -2 * (x1 - x0)
     wide = False
@@ -139,9 +144,13 @@ def drawLine( x0, y0, z0, x1, y1, z1, zbuffer, color ):
             d_east = -1 * B
             loop_start = y1
             loop_end = y
+    if (loop_end != loop_start):
+        dz = (z1-z0) / (loop_end - loop_start + 1)
+    else:
+        dz = 0
 
     while ( loop_start < loop_end ):
-        plot(zbuffer, color, x, y, 0 )
+        plot(zbuffer, color, x, y, z )
         if ( (wide and ((A > 0 and d > 0) or (A < 0 and d < 0))) or
              (tall and ((A > 0 and d < 0) or (A < 0 and d > 0 )))):
 
@@ -152,8 +161,10 @@ def drawLine( x0, y0, z0, x1, y1, z1, zbuffer, color ):
             x+= dx_east
             y+= dy_east
             d+= d_east
+        z += dz
         loop_start+= 1
-    plot(zbuffer, color, x, y, 0 )
+    plot(zbuffer, color, x, y, z + 1 )
+
 
 def addCurve (matrix, x0, y0, x1, y1, x2, y2, x3, y3, step, type):
     for i in range(int(1/step)):
